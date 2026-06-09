@@ -1,4 +1,9 @@
-#include <opencv2/opencv.hpp>
+#include "HaarFaceDetector.h"
+#include "FaceAnonymizer.h"
+
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
 #include <iostream>
 
 int main() {
@@ -9,18 +14,17 @@ int main() {
         return -1;
     }
 
-    // Load the Haar cascade once, outside the loop (loading per frame is wasteful).
-    cv::CascadeClassifier faceCascade;
-    if (!faceCascade.load("C:/opencv/build/etc/haarcascades/haarcascade_frontalface_default.xml")) {
+    // Build the detection + anonymization pipeline. main() depends only on the
+    // concrete types it wires together; the blur core depends on the abstraction.
+    HaarFaceDetector detector(
+        "C:/opencv/build/etc/haarcascades/haarcascade_frontalface_default.xml");
+    if (!detector.isReady()) {
         std::cout << "Could not load the cascade!" << std::endl;
         return -1;
     }
+    FaceAnonymizer anonymizer(detector);
 
-    // Run detection on a downscaled image for speed; detection cost scales
-    // with pixel count, so 0.5x means ~4x fewer pixels and ~4x faster.
-    const double DETECT_SCALE = 0.5;
-
-    cv::Mat frame, gray, small;
+    cv::Mat frame;
     while (true) {
         // Mark the start of this frame to measure processing time.
         double t_start = cv::getTickCount();
@@ -29,27 +33,11 @@ int main() {
         cap >> frame;
         if (frame.empty()) break;
 
-        // Convert to grayscale (the detector works on intensity, not color).
-        cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
-
-        // Downscale the grayscale image, then detect on the smaller copy.
-        cv::resize(gray, small, cv::Size(), DETECT_SCALE, DETECT_SCALE);
-
-        std::vector<cv::Rect> faces;
-        faceCascade.detectMultiScale(small, faces, 1.1, 4);
-
-        // Draw a green rectangle around each face, scaling its coordinates
-        // back up from the downscaled image to the full-resolution frame.
-        for (const auto& face : faces) {
-            cv::Rect scaled(cvRound(face.x / DETECT_SCALE),
-                            cvRound(face.y / DETECT_SCALE),
-                            cvRound(face.width / DETECT_SCALE),
-                            cvRound(face.height / DETECT_SCALE));
-            cv::rectangle(frame, scaled, cv::Scalar(0, 255, 0), 2);
-        }
+        // Detect and blur all faces in place.
+        anonymizer.anonymize(frame);
 
         // Compute this frame's processing time and convert it to FPS.
-        double t_elapsed = (cv::getTickCount() - t_start) / cv::getTickFrequency(); // seconds
+        double t_elapsed = (cv::getTickCount() - t_start) / cv::getTickFrequency();
         double fps = 1.0 / t_elapsed;
 
         // Overlay FPS and milliseconds in the top-left corner.
@@ -58,7 +46,7 @@ int main() {
                     cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 255, 0), 2);
 
         // Show the result.
-        cv::imshow("Live Face Detection", frame);
+        cv::imshow("Live Face Anonymization", frame);
 
         // Wait ~30 ms per frame; quit if 'q' is pressed during that time.
         if (cv::waitKey(30) == 'q') break;

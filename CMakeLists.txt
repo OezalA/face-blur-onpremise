@@ -8,7 +8,13 @@ set(OpenCV_DIR "C:/opencv/build/x64/vc16/lib")
 find_package(OpenCV REQUIRED)
 
 # The executable and its source files
-add_executable(FaceBlur src/main.cpp)
+add_executable(FaceBlur
+    src/main.cpp
+    src/HaarFaceDetector.cpp
+    src/FaceAnonymizer.cpp)
+
+# Let sources include project headers (e.g. "IFaceDetector.h") from src/
+target_include_directories(FaceBlur PRIVATE src)
 
 target_include_directories(FaceBlur PRIVATE ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(FaceBlur PRIVATE ${OpenCV_LIBS})
