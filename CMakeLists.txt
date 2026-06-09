@@ -11,12 +11,17 @@ find_package(OpenCV REQUIRED)
 add_executable(FaceBlur
     src/main.cpp
     src/HaarFaceDetector.cpp
-    src/FaceAnonymizer.cpp)
+    src/FaceAnonymizer.cpp
+    src/DnnFaceDetector.cpp)
 
 # Let sources include project headers (e.g. "IFaceDetector.h") from src/
 target_include_directories(FaceBlur PRIVATE src)
 
 target_include_directories(FaceBlur PRIVATE ${OpenCV_INCLUDE_DIRS})
+# Pass the absolute path of the models folder to the code, so the model loads
+# no matter which working directory the app is launched from.
+target_compile_definitions(FaceBlur PRIVATE MODELS_DIR=\"${CMAKE_SOURCE_DIR}/models\")
+
 target_link_libraries(FaceBlur PRIVATE ${OpenCV_LIBS})
 
 # After each build, copy the required OpenCV DLLs next to the executable

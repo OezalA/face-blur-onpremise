@@ -1,10 +1,12 @@
 #include "HaarFaceDetector.h"
+#include "DnnFaceDetector.h"
 #include "FaceAnonymizer.h"
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 #include <iostream>
+#include <memory>
 
 int main() {
     // Open the default webcam (index 0; try 1 or 2 if it fails).
@@ -14,15 +16,33 @@ int main() {
         return -1;
     }
 
-    // Build the detection + anonymization pipeline. main() depends only on the
-    // concrete types it wires together; the blur core depends on the abstraction.
-    HaarFaceDetector detector(
-        "C:/opencv/build/etc/haarcascades/haarcascade_frontalface_default.xml");
-    if (!detector.isReady()) {
-        std::cout << "Could not load the cascade!" << std::endl;
-        return -1;
+    // --- The ONLY place Haar vs DNN is chosen. Thanks to IFaceDetector, the
+    //     rest of the program does not change at all. ---
+    const bool USE_DNN = true;
+
+    std::unique_ptr<IFaceDetector> detector;
+    std::string detectorName;
+    if (USE_DNN) {
+                auto dnn = std::make_unique<DnnFaceDetector>(
+            std::string(MODELS_DIR) + "/face_detection_yunet_2023mar.onnx", 0.6f);
+        if (!dnn->isReady()) {
+            std::cout << "Could not load the DNN model!" << std::endl;
+            return -1;
+        }
+        detector = std::move(dnn);
+        detectorName = "DNN (YuNet)";
+    } else {
+        auto haar = std::make_unique<HaarFaceDetector>(
+            "C:/opencv/build/etc/haarcascades/haarcascade_frontalface_default.xml");
+        if (!haar->isReady()) {
+            std::cout << "Could not load the cascade!" << std::endl;
+            return -1;
+        }
+        detector = std::move(haar);
+        detectorName = "Haar";
     }
-    FaceAnonymizer anonymizer(detector);
+
+    FaceAnonymizer anonymizer(*detector);
 
     cv::Mat frame;
     while (true) {
@@ -40,10 +60,11 @@ int main() {
         double t_elapsed = (cv::getTickCount() - t_start) / cv::getTickFrequency();
         double fps = 1.0 / t_elapsed;
 
-        // Overlay FPS and milliseconds in the top-left corner.
-        std::string overlay = cv::format("FPS: %.0f | %.0f ms", fps, t_elapsed * 1000.0);
+        // Overlay the active detector, FPS and milliseconds in the top-left.
+        std::string overlay = cv::format("%s | FPS: %.0f | %.0f ms",
+                                         detectorName.c_str(), fps, t_elapsed * 1000.0);
         cv::putText(frame, overlay, cv::Point(10, 30),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 255, 0), 2);
+                    cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
 
         // Show the result.
         cv::imshow("Live Face Anonymization", frame);

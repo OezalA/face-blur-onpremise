@@ -2,8 +2,8 @@
 
 #include <opencv2/imgproc.hpp>
 
-FaceAnonymizer::FaceAnonymizer(IFaceDetector& detector, int blurStrength)
-    : detector_(detector), blurStrength_(blurStrength) {}
+FaceAnonymizer::FaceAnonymizer(IFaceDetector& detector, int mosaicBlocks)
+    : detector_(detector), mosaicBlocks_(mosaicBlocks) {}
 
 void FaceAnonymizer::anonymize(cv::Mat& frame) {
     const std::vector<cv::Rect> faces = detector_.detect(frame);
@@ -14,9 +14,13 @@ void FaceAnonymizer::anonymize(cv::Mat& frame) {
         box &= cv::Rect(0, 0, frame.cols, frame.rows);
         if (box.empty()) continue;
 
-        // frame(box) is a view into the original frame, so blurring it in
-        // place modifies the frame directly -- no paste-back needed.
+        // Pixelate (mosaic): shrink the face region to a few cells, then scale
+        // it back up with nearest-neighbor so each cell becomes a solid block.
+        // frame(box) is a view, so this edits the frame in place.
         cv::Mat roi = frame(box);
-        cv::GaussianBlur(roi, roi, cv::Size(blurStrength_, blurStrength_), 0);
+        cv::Mat tiny;
+        cv::resize(roi, tiny, cv::Size(mosaicBlocks_, mosaicBlocks_), 0, 0,
+                   cv::INTER_LINEAR);
+        cv::resize(tiny, roi, roi.size(), 0, 0, cv::INTER_NEAREST);
     }
 }
