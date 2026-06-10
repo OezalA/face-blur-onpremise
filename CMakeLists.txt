@@ -7,25 +7,32 @@ set(CMAKE_CXX_STANDARD 17)
 set(OpenCV_DIR "C:/opencv/build/x64/vc16/lib")
 find_package(OpenCV REQUIRED)
 
-# The executable and its source files
-add_executable(FaceBlur
-    src/main.cpp
+# Core vision sources, shared by the local test exe and the DLL.
+set(CORE_SOURCES
     src/HaarFaceDetector.cpp
     src/FaceAnonymizer.cpp
     src/DnnFaceDetector.cpp)
 
-# Let sources include project headers (e.g. "IFaceDetector.h") from src/
-target_include_directories(FaceBlur PRIVATE src)
-
-target_include_directories(FaceBlur PRIVATE ${OpenCV_INCLUDE_DIRS})
-# Pass the absolute path of the models folder to the code, so the model loads
-# no matter which working directory the app is launched from.
+# --- Local test executable: uses the C++ classes directly (for development) ---
+add_executable(FaceBlur src/main.cpp ${CORE_SOURCES})
+target_include_directories(FaceBlur PRIVATE src ${OpenCV_INCLUDE_DIRS})
 target_compile_definitions(FaceBlur PRIVATE MODELS_DIR=\"${CMAKE_SOURCE_DIR}/models\")
-
 target_link_libraries(FaceBlur PRIVATE ${OpenCV_LIBS})
 
-# After each build, copy the required OpenCV DLLs next to the executable
-# (so it does not fail at runtime with "opencv_world...dll not found")
+# --- Smoke test: a tiny C++ program that calls the DLL through its C API,
+#     exactly the way C# will (no OpenCV, no C++ classes -- just the C API). ---
+add_executable(SmokeTest tests/smoke_test.cpp)
+target_include_directories(SmokeTest PRIVATE src)
+target_compile_definitions(SmokeTest PRIVATE MODELS_DIR=\"${CMAKE_SOURCE_DIR}/models\")
+target_link_libraries(SmokeTest PRIVATE FaceBlurCore)
+
+# --- Shared library (DLL): the flat C API that C# will call via P/Invoke ---
+add_library(FaceBlurCore SHARED src/FaceBlurApi.cpp ${CORE_SOURCES})
+target_include_directories(FaceBlurCore PRIVATE src ${OpenCV_INCLUDE_DIRS})
+target_compile_definitions(FaceBlurCore PRIVATE FACEBLUR_EXPORTS)
+target_link_libraries(FaceBlurCore PRIVATE ${OpenCV_LIBS})
+
+# After building the exe, copy the OpenCV DLLs next to it so it runs.
 add_custom_command(TARGET FaceBlur POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${OpenCV_DIR}/../bin/opencv_world4110$<$<CONFIG:Debug>:d>.dll"
