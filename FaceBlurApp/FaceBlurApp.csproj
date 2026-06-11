@@ -6,11 +6,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="OpenCvSharp4.Windows" Version="4.13.0.20260602" />
     <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260602" />
+  </ItemGroup>
+
+  <!-- Copy the native engine, its OpenCV, and the model next to the C# app -->
+  <ItemGroup>
+    <None Include="..\build\Release\FaceBlurCore.dll" Link="FaceBlurCore.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\build\Release\opencv_world4110.dll" Link="opencv_world4110.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\models\face_detection_yunet_2023mar.onnx" Link="models\face_detection_yunet_2023mar.onnx" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

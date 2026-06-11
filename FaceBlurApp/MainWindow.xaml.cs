@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,6 +13,7 @@ namespace FaceBlurApp
         private VideoCapture? _capture;
         private CancellationTokenSource? _cts;
         private Task? _captureTask;
+        private FaceBlurEngine? _engine;
 
         public MainWindow()
         {
@@ -20,6 +22,22 @@ namespace FaceBlurApp
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
+            // Create the native face-blur engine once (loads the model).
+            if (_engine is null)
+            {
+                try
+                {
+                    string modelPath = Path.Combine(AppContext.BaseDirectory,
+                        "models", "face_detection_yunet_2023mar.onnx");
+                    _engine = new FaceBlurEngine(modelPath);
+                }
+                catch (Exception ex)
+                {
+                    StatusText.Text = "Engine error: " + ex.Message;
+                    return;
+                }
+            }
+
             // Open the default camera (index 0).
             _capture = new VideoCapture(0);
             if (!_capture.IsOpened())
@@ -45,12 +63,13 @@ namespace FaceBlurApp
                 using var frame = new Mat();
                 while (!token.IsCancellationRequested)
                 {
-                    // Grab one frame; skip if the camera isn't ready yet.
                     if (_capture is null || !_capture.Read(frame) || frame.Empty())
                         continue;
 
-                    // Convert to a WPF image and Freeze it so it can cross from
-                    // this background thread to the UI thread safely.
+                    // Blur faces in place via the native C++ engine. Zero-copy:
+                    // we hand it the frame's own pixel buffer (Data + dimensions).
+                    _engine?.ProcessBgr(frame.Data, frame.Cols, frame.Rows, (int)frame.Step());
+
                     var bitmap = frame.ToBitmapSource();
                     bitmap.Freeze();
                     Dispatcher.BeginInvoke(() => PreviewImage.Source = bitmap);
@@ -61,7 +80,6 @@ namespace FaceBlurApp
                 Dispatcher.BeginInvoke(() => StatusText.Text = "Error: " + ex.Message);
             }
         }
-
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
@@ -74,7 +92,7 @@ namespace FaceBlurApp
         private void StopCapture()
         {
             _cts?.Cancel();
-            _captureTask?.Wait();   // wait for the loop to finish
+            _captureTask?.Wait();
             _captureTask = null;
             _cts?.Dispose();
             _cts = null;
@@ -84,7 +102,9 @@ namespace FaceBlurApp
 
         protected override void OnClosed(EventArgs e)
         {
-            StopCapture();          // clean shutdown when the window closes
+            StopCapture();
+            _engine?.Dispose();   // free the native engine
+            _engine = null;
             base.OnClosed(e);
         }
     }
