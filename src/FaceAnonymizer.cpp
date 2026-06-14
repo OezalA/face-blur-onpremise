@@ -24,3 +24,7 @@ void FaceAnonymizer::anonymize(cv::Mat& frame) {
         cv::resize(tiny, roi, roi.size(), 0, 0, cv::INTER_NEAREST);
     }
 }
+
+void FaceAnonymizer::setMosaicBlocks(int blocks) {
+    mosaicBlocks_ = blocks < 1 ? 1 : blocks;   // clamp: at least 1 block
+}

@@ -14,6 +14,9 @@ public:
     // Detect and pixelate all faces in the frame, in place.
     void anonymize(cv::Mat& frame);
 
+    // Change the mosaic strength at runtime (fewer blocks = chunkier).
+    void setMosaicBlocks(int blocks);
+
 private:
     IFaceDetector& detector_;
     int mosaicBlocks_;

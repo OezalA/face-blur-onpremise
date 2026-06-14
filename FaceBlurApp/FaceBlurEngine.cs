@@ -20,6 +20,9 @@ namespace FaceBlurApp
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
         private static extern void FaceBlur_Destroy(IntPtr handle);
 
+        [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void FaceBlur_SetMosaicBlocks(IntPtr handle, int blocks);
+
         private IntPtr _handle;
 
         public FaceBlurEngine(string modelPath, float scoreThreshold = 0.6f, int mosaicBlocks = 13)
@@ -34,6 +37,13 @@ namespace FaceBlurApp
         {
             if (_handle == IntPtr.Zero) return;
             FaceBlur_ProcessBGR(_handle, data, width, height, step);
+        }
+
+        /// <summary>Change the mosaic strength at runtime (fewer blocks = chunkier).</summary>
+        public void SetMosaicBlocks(int blocks)
+        {
+            if (_handle == IntPtr.Zero) return;
+            FaceBlur_SetMosaicBlocks(_handle, blocks);
         }
 
         public void Dispose()

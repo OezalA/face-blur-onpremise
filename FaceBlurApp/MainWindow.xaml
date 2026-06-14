@@ -1,4 +1,4 @@
-﻿<Window x:Class="FaceBlurApp.MainWindow"
+<Window x:Class="FaceBlurApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Face Blur — On-Premise" Height="600" Width="800">
@@ -11,6 +11,18 @@
         <!-- Video preview area -->
         <Image x:Name="PreviewImage" Grid.Row="0" Stretch="Uniform" />
 
+        <!-- FPS / ms overlay on top of the preview -->
+        <TextBlock x:Name="FpsText" Grid.Row="0" Text=""
+                   Foreground="#00FF00" FontSize="16" FontWeight="Bold"
+                   HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" />
+
+        <!-- On-premise / privacy badge: all processing is local, no network -->
+        <Border Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="10" Padding="10,5" CornerRadius="4" Background="#1B5E20">
+            <TextBlock Text="🔒 On-Premise · No network access"
+                       Foreground="White" FontWeight="SemiBold" />
+        </Border>
+
         <!-- Control bar at the bottom -->
         <Border Grid.Row="1" Background="#2D2D30" Padding="10">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -18,6 +30,17 @@
                         Click="StartButton_Click" />
                 <Button x:Name="StopButton" Content="Stop" Width="80" Margin="10,0,0,0"
                         Click="StopButton_Click" IsEnabled="False" />
+
+                <CheckBox x:Name="DetectionToggle" Content="Detection" IsChecked="True"
+                          Foreground="White" VerticalAlignment="Center" Margin="20,0,0,0"
+                          Checked="DetectionToggle_Changed" Unchecked="DetectionToggle_Changed" />
+
+                <TextBlock Text="Blur" Foreground="White" VerticalAlignment="Center" Margin="20,0,6,0" />
+                <Slider x:Name="BlurSlider" Width="140" Minimum="5" Maximum="40" Value="13"
+                        VerticalAlignment="Center" IsDirectionReversed="True"
+                        ValueChanged="BlurSlider_ValueChanged"
+                        ToolTip="Right = stronger (fewer mosaic blocks)" />
+
                 <TextBlock x:Name="StatusText" Text="Ready" Foreground="White"
                            VerticalAlignment="Center" Margin="20,0,0,0" />
             </StackPanel>

@@ -30,6 +30,9 @@ FACEBLUR_API void FaceBlur_ProcessBGR(FaceBlurHandle handle,
                                       unsigned char* data,
                                       int width, int height, int step);
 
+// Change the mosaic strength live (fewer blocks = chunkier).
+FACEBLUR_API void FaceBlur_SetMosaicBlocks(FaceBlurHandle handle, int blocks);
+
 // Destroy the engine and free its resources.
 FACEBLUR_API void FaceBlur_Destroy(FaceBlurHandle handle);
 
