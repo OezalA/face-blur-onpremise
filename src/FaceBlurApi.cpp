@@ -37,6 +37,12 @@ void FaceBlur_ProcessBGR(FaceBlurHandle handle, unsigned char* data,
     engine->anonymizer->anonymize(frame);
 }
 
+void FaceBlur_SetMosaicBlocks(FaceBlurHandle handle, int blocks) {
+    if (handle == nullptr) return;
+    auto engine = static_cast<FaceBlurEngine*>(handle);
+    engine->anonymizer->setMosaicBlocks(blocks);
+}
+
 void FaceBlur_Destroy(FaceBlurHandle handle) {
     delete static_cast<FaceBlurEngine*>(handle);
 }
