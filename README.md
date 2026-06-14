@@ -13,8 +13,10 @@ with the stack such products use: a **C++ / OpenCV** vision core for performance
 
 ## Demo
 
-<!-- TODO: add a 15-30s screen recording (faces blurring live, Detection toggle, blur slider) -->
-_Screen recording coming soon._
+![Live face anonymization demo](docs/demo.gif)
+
+_Faces are blurred in real time; the **Detection** toggle and the **Blur** slider are
+live. [▶ Watch the full clip (MP4)](docs/demo.mp4)._
 
 ## Why this design
 
