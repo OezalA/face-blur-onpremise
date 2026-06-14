@@ -23,7 +23,7 @@ int main() {
     std::unique_ptr<IFaceDetector> detector;
     std::string detectorName;
     if (USE_DNN) {
-                auto dnn = std::make_unique<DnnFaceDetector>(
+        auto dnn = std::make_unique<DnnFaceDetector>(
             std::string(MODELS_DIR) + "/face_detection_yunet_2023mar.onnx", 0.6f);
         if (!dnn->isReady()) {
             std::cout << "Could not load the DNN model!" << std::endl;
